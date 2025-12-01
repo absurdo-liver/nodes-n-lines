@@ -1,3 +1,4 @@
+
 import { graphData } from './sources.js';
 
 const graphContainer = document.getElementById("graph-container");
@@ -24,7 +25,19 @@ function handleNodeClick(event, d) {
   console.log(`Status: clicked=${d.clicked}, unclicked=${d.unclicked}`);
   
   d3.select(event.currentTarget).attr("fill", d.clicked ? "red" : "steelblue");
+  exportEvent('nodeClickEvent', d)
 }
+
+function exportEvent(event, subject){
+  const newEvent = new CustomEvent(event, {
+    detail: {
+      subject: subject,
+      clicked: subject.clicked
+    }
+  });
+  document.dispatchEvent(newEvent);
+}
+
 
 function handleResize() {
     width = graphContainer.clientWidth;
@@ -134,3 +147,4 @@ function drawD3Graph(nodesData, linksData) {
 }
 
 render();
+
