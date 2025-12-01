@@ -1,33 +1,19 @@
 const graphContainer = document.getElementById("graph-container");
-var width = graphContainer.clientWidth;
-var height = graphContainer.clientHeight || 400;
+let width = graphContainer.clientWidth;
+let height = graphContainer.clientHeight || 400;
 
-window.onresize = () => {
-  width = graphContainer.clientWidth;
-  height = graphContainer.clientHeight || 400;
-}
+let svg, simulation, link, node, labels;
 
 const graphData = {
     nodes: [
-        { id: "A" },
-        { id: "B" },
-        { id: "C" },
-        { id: "D" },
-        { id: "E" },
-        { id: "F" },
-        { id: "G" },
-        { id: "H" },
-        { id: "I" }
+        { id: "A" }, { id: "B" }, { id: "C" }, { id: "D" }, { id: "E" },
+        { id: "F" }, { id: "G" }, { id: "H" }, { id: "I" }
     ],
     links: [
-        { source: "A", target: "B" },
-        { source: "B", target: "C" },
-        { source: "C", target: "D" },
-        { source: "D", target: "E" },
-        { source: "E", target: "F" },
-        { source: "F", target: "G" },
-        { source: "G", target: "H" },
-        { source: "H", target: "I" },
+        { source: "A", target: "B" }, { source: "B", target: "C" },
+        { source: "C", target: "D" }, { source: "D", target: "E" },
+        { source: "E", target: "F" }, { source: "F", target: "G" },
+        { source: "G", target: "H" }, { source: "H", target: "I" },
         { source: "I", target: "A" }
     ]
 };
@@ -36,29 +22,45 @@ const render = () => {
     drawD3Graph(graphData.nodes, graphData.links); 
 };
 
+function handleResize() {
+    width = graphContainer.clientWidth;
+    height = graphContainer.clientHeight || 400;
+
+    if (svg) {
+        svg.attr("width", width).attr("height", height);
+    }
+    
+    if (simulation) {
+        simulation.force("center", d3.forceCenter(width / 2, height / 2));
+        simulation.alpha(1).restart();
+    }
+}
+
+window.onresize = handleResize;
+
 
 function drawD3Graph(nodesData, linksData) {
-    graphContainer.innerHTML = ''; 
-    const svg = d3.select(graphContainer)
+    graphContainer.innerHTML = '';
+    
+    svg = d3.select(graphContainer)
       .append("svg")
       .attr("width", width)
       .attr("height", height);
 
-    const simulation = d3.forceSimulation(nodesData)
+    simulation = d3.forceSimulation(nodesData)
         .force("link", d3.forceLink(linksData).id(d => d.id).distance(100).strength(0.7)) 
         .force("charge", d3.forceManyBody().strength(-200)) 
         .force("center", d3.forceCenter(width / 2, height / 2))
         .on("tick", ticked);
 
-
-    const link = svg.append("g")
+    link = svg.append("g")
         .attr("stroke", "#999")
         .attr("stroke-opacity", 0.6)
       .selectAll("line")
       .data(linksData)
       .join("line");
 
-    const node = svg.append("g")
+    node = svg.append("g")
         .attr("stroke", "#fff")
         .attr("stroke-width", 1.5)
       .selectAll("circle")
@@ -71,7 +73,7 @@ function drawD3Graph(nodesData, linksData) {
             .on("drag", dragged)
             .on("end", dragended));
 
-    const labels = svg.append("g")
+    labels = svg.append("g")
         .attr("class", "labels")
       .selectAll("text")
       .data(nodesData)
