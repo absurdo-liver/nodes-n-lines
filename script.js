@@ -11,44 +11,46 @@ let height = graphContainer.clientHeight || 400;
 
 let svg, simulation, link, node, labels;
 
+const DEFAULT_NODE_COLOR = "steelblue"; 
+let currentlyActiveNodeData = null; 
 
 const render = () => {
   drawD3Graph(graphData.nodes, graphData.links);
 };
 
 function handleNodeClick(event, d) {
-  d.clicked = !d.clicked;
-  d.unclicked = !d.unclicked;
-
-  console.log("Node clicked:", d.id);
-  console.log(`Status: clicked=${d.clicked}, unclicked=${d.unclicked}`);
   
-  d3.select(event.currentTarget).attr("fill", d.clicked ? "red" : "steelblue");
-  exportEvent('nodeClickEvent', d) 
+  if (currentlyActiveNodeData && currentlyActiveNodeData.id === d.id) {
+    d3.select(event.currentTarget).attr("fill", DEFAULT_NODE_COLOR);
+    d.clicked = false;
+    exportEvent('nodeClickEvent', d); 
+    currentlyActiveNodeData = null; 
+    return; 
+  }
+
+  if (currentlyActiveNodeData) {
+    node.filter(p => p.id === currentlyActiveNodeData.id)
+        .attr("fill", DEFAULT_NODE_COLOR);
+    currentlyActiveNodeData.clicked = false;
+    exportEvent('nodeClickEvent', currentlyActiveNodeData); 
+  }
+
+  currentlyActiveNodeData = d;
+  d.clicked = true;
+  d3.select(event.currentTarget).attr("fill", "red"); 
+
+  exportEvent('nodeClickEvent', d);
 }
 
 function exportEvent(event, subject){
   const newEvent = new CustomEvent(event, {
-    detail: {
+    detail: { 
       subject: subject.id,
       clicked: subject.clicked,
-      position: { x: subject.x, y: subject.y }
+      position: { x: subject.x, y: subject.y } 
     }
   });
   document.dispatchEvent(newEvent);
-}
-
-function exportPositionsUpdate(nodesData) {
-    const clickedNodePositions = nodesData
-        .filter(d => d.clicked)
-        .map(d => ({ id: d.id, x: d.x, y: d.y }));
-    
-    const newEvent = new CustomEvent('graphUpdateEvent', {
-        detail: {
-            positions: clickedNodePositions
-        }
-    });
-    document.dispatchEvent(newEvent);
 }
 
 function handleResize() {
@@ -106,7 +108,7 @@ function drawD3Graph(nodesData, linksData) {
       .data(nodesData)
       .join("circle")
         .attr("r", 10)
-        .attr("fill", "steelblue")
+        .attr("fill", DEFAULT_NODE_COLOR) 
         .on('click', handleNodeClick) 
         .call(d3.drag()
             .on("start", dragstarted)
@@ -138,8 +140,6 @@ function drawD3Graph(nodesData, linksData) {
         labels
             .attr("x", d => d.x)
             .attr("y", d => d.y);
-            
-        exportPositionsUpdate(nodesData);
     }
 
     function dragstarted(event, d) {

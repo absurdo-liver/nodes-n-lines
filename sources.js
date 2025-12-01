@@ -20,3 +20,17 @@ export const graphData = {
         { source: "A", target: "J" }
     ]
 };
+
+
+export var nodesTextData = {
+    "A": "", 
+    "B": "",
+    "C": "",
+    "D": "",
+    "E": "",
+    "F": "",
+    "G": "",
+    "H": "",
+    "I": "",
+    "J": ""
+};

@@ -1,77 +1,76 @@
-// import { graphData } from './sources.js';
+import { nodesTextData as defaultNodesTextData } from './sources.js'; 
 
-var clickedNodes = [];
-var nodesMap = new Map();
-let isNodeActive = false;
+var activeNodeId = null; 
+
+const notesContainer = document.createElement('div');
+notesContainer.id = 'notes-container';
+notesContainer.style.position = 'absolute';
+notesContainer.style.bottom = '20px';
+notesContainer.style.right = '20px';
+notesContainer.style.width = '300px';
+notesContainer.style.height = '200px';
+notesContainer.style.backgroundColor = 'white';
+notesContainer.style.border = '1px solid #ccc';
+notesContainer.style.padding = '10px';
+notesContainer.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+notesContainer.style.display = 'none'; 
+document.body.appendChild(notesContainer);
+
+const notesHeader = document.createElement('h4');
+notesHeader.id = 'notes-header';
+notesHeader.textContent = 'Notes for Node: ';
+notesContainer.appendChild(notesHeader);
+
+const notesTextarea = document.createElement('textarea');
+notesTextarea.id = 'notes-textarea';
+notesTextarea.style.width = '100%';
+notesTextarea.style.height = 'calc(100% - 40px)'; 
+notesTextarea.style.resize = 'none';
+notesTextarea.placeholder = 'Type your notes here...';
+notesTextarea.addEventListener('input', saveNote); 
+notesContainer.appendChild(notesTextarea);
+
+
+function initializeNotesStorage() {
+    Object.keys(defaultNodesTextData).forEach(nodeId => {
+        const storageKey = `node-notes-${nodeId}`;
+        if (localStorage.getItem(storageKey) === null) {
+            localStorage.setItem(storageKey, defaultNodesTextData[nodeId]);
+        }
+    });
+}
+initializeNotesStorage();
+
 
 document.addEventListener('nodeClickEvent', handleNodeClick);
-document.addEventListener('graphUpdateEvent', handleGraphUpdate);
 
 function handleNodeClick(e) {
   let nodeID = e.detail.subject; 
   let clicked = e.detail.clicked;
-  let position = e.detail.position; 
 
   if (clicked) {
-    if (!nodesMap.has(nodeID)) {
-       clickedNodes.push(nodeID); 
-       createText(nodeID, position);
-    }
+    activeNodeId = nodeID; 
+    notesHeader.textContent = `Notes for Node: ${nodeID}`;
+    loadNote(nodeID);
+    notesContainer.style.display = 'block'; 
+    notesTextarea.focus(); 
   } else {
-    const index = clickedNodes.indexOf(nodeID);
-    if (index > -1) {
-      clickedNodes.splice(index, 1);
+    if (activeNodeId === nodeID) {
+        saveNote();
+        notesContainer.style.display = 'none';
+        activeNodeId = null;
     }
-    removeText(nodeID);
-  }
-
-  isNodeActive = clickedNodes.length > 0;
-}
-
-function handleGraphUpdate(e) {
-    const updatedPositions = e.detail.positions;
-    
-    updatedPositions.forEach(pos => {
-        const entry = nodesMap.get(pos.id);
-        if (entry) {
-            entry.pos.x = pos.x;
-            entry.pos.y = pos.y;
-        }
-    });
-}
-
-
-function createText(nodeID, position){
-  const newElem = document.createElement('p');
-  newElem.id = nodeID + 'text';
-  newElem.textContent = nodeID;
-  newElem.style.zIndex = '1';
-  newElem.style.position = 'absolute';
-  newElem.style.display = 'block';
-  newElem.style.transform = 'translate(-200%, -200%)';
-  document.body.appendChild(newElem);
-  
-  nodesMap.set(nodeID, { obj: newElem, pos: position }); 
-}
-
-function removeText(nodeID) {
-  const entry = nodesMap.get(nodeID);
-  if (entry) {
-    document.body.removeChild(entry.obj);
-    nodesMap.delete(nodeID);
   }
 }
 
-
-function updatePositionLoop() {
-  if (isNodeActive) {
-    nodesMap.forEach((entry) => {
-        entry.obj.style.top = `${entry.pos.y}px`;
-        entry.obj.style.left = `${entry.pos.x}px`;
-    });
-  }
-
-  requestAnimationFrame(updatePositionLoop);
+function saveNote() {
+    if (activeNodeId) {
+        const noteContent = notesTextarea.value;
+        localStorage.setItem(`node-notes-${activeNodeId}`, noteContent);
+    }
 }
 
-requestAnimationFrame(updatePositionLoop);
+function loadNote(nodeID) {
+    const savedNote = localStorage.getItem(`node-notes-${nodeID}`);
+    notesTextarea.value = savedNote || ''; 
+}
