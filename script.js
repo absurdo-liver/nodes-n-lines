@@ -1,26 +1,30 @@
+import { graphData } from './sources.js';
+
 const graphContainer = document.getElementById("graph-container");
+
+var customisation = {
+  forceBehaviourCenter: 1,
+}
+
 let width = graphContainer.clientWidth;
 let height = graphContainer.clientHeight || 400;
 
 let svg, simulation, link, node, labels;
 
-const graphData = {
-    nodes: [
-        { id: "A" }, { id: "B" }, { id: "C" }, { id: "D" }, { id: "E" },
-        { id: "F" }, { id: "G" }, { id: "H" }, { id: "I" }
-    ],
-    links: [
-        { source: "A", target: "B" }, { source: "B", target: "C" },
-        { source: "C", target: "D" }, { source: "D", target: "E" },
-        { source: "E", target: "F" }, { source: "F", target: "G" },
-        { source: "G", target: "H" }, { source: "H", target: "I" },
-        { source: "I", target: "A" }
-    ]
-};
 
 const render = () => {
-    drawD3Graph(graphData.nodes, graphData.links); 
+  drawD3Graph(graphData.nodes, graphData.links);
 };
+
+function handleNodeClick(event, d) {
+  d.clicked = !d.clicked;
+  d.unclicked = !d.unclicked;
+
+  console.log("Node clicked:", d.id);
+  console.log(`Status: clicked=${d.clicked}, unclicked=${d.unclicked}`);
+  
+  d3.select(event.currentTarget).attr("fill", d.clicked ? "red" : "steelblue");
+}
 
 function handleResize() {
     width = graphContainer.clientWidth;
@@ -36,7 +40,7 @@ function handleResize() {
     }
 }
 
-window.onresize = handleResize;
+window.addEventListener('resize', handleResize);
 
 
 function drawD3Graph(nodesData, linksData) {
@@ -47,12 +51,22 @@ function drawD3Graph(nodesData, linksData) {
       .attr("width", width)
       .attr("height", height);
 
-    simulation = d3.forceSimulation(nodesData)
-        .force("link", d3.forceLink(linksData).id(d => d.id).distance(100).strength(0.7)) 
-        .force("charge", d3.forceManyBody().strength(-200)) 
-        .force("center", d3.forceCenter(width / 2, height / 2))
-        .on("tick", ticked);
-
+    if(customisation.forceBehaviourCenter){
+        simulation = d3.forceSimulation(nodesData)
+          .force("link", d3.forceLink(linksData).id(d => d.id).distance(100).strength(0.7)) 
+          .force("charge", d3.forceManyBody().strength(-200)) 
+          .force("center", d3.forceCenter(width / 2, height / 2))
+          .force("forceX", d3.forceX(width / 2).strength(0.05))
+          .force("forceY", d3.forceY(height / 2).strength(0.05))
+          .on("tick", ticked);
+    } else {
+      simulation = d3.forceSimulation(nodesData)
+          .force("link", d3.forceLink(linksData).id(d => d.id).distance(100).strength(0.7)) 
+          .force("charge", d3.forceManyBody().strength(-200))
+          .force("forceX", d3.forceX(width / 2).strength(0.05))
+          .force("forceY", d3.forceY(height / 2).strength(0.05))
+          .on("tick", ticked);
+    }
     link = svg.append("g")
         .attr("stroke", "#999")
         .attr("stroke-opacity", 0.6)
@@ -68,6 +82,7 @@ function drawD3Graph(nodesData, linksData) {
       .join("circle")
         .attr("r", 10)
         .attr("fill", "steelblue")
+        .on('click', handleNodeClick) 
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
